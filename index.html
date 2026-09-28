@@ -1952,7 +1952,7 @@ function toggleFAQ(el){
 
 // ── RSVP ──
 // GOOGLE APPS SCRIPT ENDPOINT — replace with your deployed Web App URL
-var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbwDUhLcHspV-n0QMdDs7tMz7reLqx2-nOFtIA-SEE9uRB5LeZafoguLkNGVnCw_LNYYew/exec";
+var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbyNBmV0uAM25PHl5sMxf0mXfl43lqbHEbaI1NGK25td88qIzhIlLL181pktE0mevetCeA/exec";
 
 // Stores guest data returned from lookup
 var _rsvpGuestData = null;
@@ -2105,20 +2105,59 @@ function submitRSVP(){
   var btn = document.querySelector('#rsvpStep2 .btn-gold');
   if(btn){ btn.disabled = true; btn.textContent = "Sending…"; }
 
-  // POST as plain text with JSON body — no-cors requires no custom headers
-  fetch(RSVP_ENDPOINT, {
-    method: "POST",
-    mode: "no-cors",
-    body: JSON.stringify(payload)
-  })
-  .then(function(){
-    document.getElementById("rsvpForm").style.display="none";
-    document.getElementById("rsvpSuccess").classList.add("show");
-  })
-  .catch(function(){
+  // Build query string — encode guests as indexed params (avoids no-cors POST body issues)
+  var qs = "action=submit";
+  qs += "&inviteId="    + encodeURIComponent(payload.inviteId);
+  qs += "&partyName="   + encodeURIComponent(payload.partyName);
+  qs += "&phone="       + encodeURIComponent(payload.phone);
+  qs += "&email="       + encodeURIComponent(payload.email);
+  qs += "&attending="   + encodeURIComponent(payload.attending);
+  qs += "&message="     + encodeURIComponent(payload.message);
+  qs += "&submittedAt=" + encodeURIComponent(payload.submittedAt);
+  for(var gi = 0; gi < payload.guests.length; gi++){
+    var g = payload.guests[gi];
+    qs += "&guests_" + gi + "_name="      + encodeURIComponent(g.name      || "");
+    qs += "&guests_" + gi + "_attending=" + encodeURIComponent(g.attending || "yes");
+    qs += "&guests_" + gi + "_dietary="   + encodeURIComponent(g.dietary   || "");
+    qs += "&guests_" + gi + "_alcohol="   + encodeURIComponent(g.alcohol   || "");
+    qs += "&guests_" + gi + "_allergy="   + encodeURIComponent(g.allergy   || "");
+  }
+
+  // Use JSONP so response can be read across origins
+  var cbName = "_submitCb_" + Date.now();
+  var timeout = setTimeout(function(){
+    cleanup();
     if(btn){ btn.disabled = false; btn.textContent = "Send Reply"; }
     alert("Something went wrong. Please email us directly at nikhyta.desaipatel@gmail.com");
-  });
+  }, 15000);
+
+  function cleanup(){
+    clearTimeout(timeout);
+    delete window[cbName];
+    var s = document.getElementById(cbName);
+    if(s) s.parentNode.removeChild(s);
+  }
+
+  window[cbName] = function(data){
+    cleanup();
+    if(data && data.ok){
+      document.getElementById("rsvpForm").style.display="none";
+      document.getElementById("rsvpSuccess").classList.add("show");
+    } else {
+      if(btn){ btn.disabled = false; btn.textContent = "Send Reply"; }
+      alert("Something went wrong. Please email us directly at nikhyta.desaipatel@gmail.com");
+    }
+  };
+
+  var script = document.createElement("script");
+  script.id = cbName;
+  script.src = RSVP_ENDPOINT + "?" + qs + "&callback=" + cbName;
+  script.onerror = function(){
+    cleanup();
+    if(btn){ btn.disabled = false; btn.textContent = "Send Reply"; }
+    alert("Something went wrong. Please email us directly at nikhyta.desaipatel@gmail.com");
+  };
+  document.head.appendChild(script);
 }
 function toggleAttending(yes){
   document.getElementById("attendingBlock").style.display=yes?"block":"none";
