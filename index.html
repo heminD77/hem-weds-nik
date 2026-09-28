@@ -1614,23 +1614,10 @@ footer::before{
           <label>Email Address</label>
           <input id="rsvp-email" type="email" placeholder="your@email.com" />
         </div>
-        <div class="form-group">
-          <label>Will you be attending?</label>
-          <div class="radio-group">
-            <label class="radio-option">
-              <input type="radio" name="attending" value="yes" checked onchange="toggleAttending(true)" /> Joyfully accepts
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="attending" value="no" onchange="toggleAttending(false)" /> Regretfully declines
-            </label>
-          </div>
-        </div>
-        <div id="attendingBlock">
-          <div id="guestRows"></div>
-          <div class="form-group" style="margin-top:0.5rem">
-            <label>Message to the Couple (optional)</label>
-            <textarea id="rsvp-message" rows="3" placeholder="A note, a wish, a favourite song request..."></textarea>
-          </div>
+        <div id="guestRows"></div>
+        <div class="form-group" style="margin-top:0.5rem">
+          <label>Message to the Couple (optional)</label>
+          <textarea id="rsvp-message" rows="3" placeholder="A note, a wish, a favourite song request..."></textarea>
         </div>
         <button class="btn-gold" onclick="submitRSVP()">Send Reply</button>
         <div class="rsvp-deadline-banner">
@@ -1965,7 +1952,7 @@ function toggleFAQ(el){
 
 // ── RSVP ──
 // GOOGLE APPS SCRIPT ENDPOINT — replace with your deployed Web App URL
-var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbzOEbQ0iVoF_u2un9J4jwxZvmgzKind3Wgl9TQdJ3H5c_nBn-Vw_iicIAYCK-kh0558MQ/exec";
+var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbwDUhLcHspV-n0QMdDs7tMz7reLqx2-nOFtIA-SEE9uRB5LeZafoguLkNGVnCw_LNYYew/exec";
 
 // Stores guest data returned from lookup
 var _rsvpGuestData = null;
@@ -2040,7 +2027,14 @@ function _showRSVPStep2(data){
 function buildGuestRowPrefilled(i, label, guestName){
   var numBadge = '<span class="guest-row-num">' + i + '</span>';
   var labelText = '<span>' + label + '</span>';
-  return '<div class="guest-row"><div class="guest-row-header">' + numBadge + labelText + '</div>' +
+  return '<div class="guest-row" data-guest-index="' + i + '">' +
+    '<div class="guest-row-header">' + numBadge + labelText + '</div>' +
+    '<div class="form-group" style="margin-bottom:1rem">' +
+    '<div class="radio-group" style="flex-direction:row;gap:1.5rem;">' +
+    '<label class="radio-option"><input type="radio" name="attending-' + i + '" value="yes" checked onchange="toggleGuestAttending(this,' + i + ')" /> Joyfully accepts</label>' +
+    '<label class="radio-option"><input type="radio" name="attending-' + i + '" value="no" onchange="toggleGuestAttending(this,' + i + ')" /> Regretfully declines</label>' +
+    '</div></div>' +
+    '<div id="guest-details-' + i + '">' +
     '<div class="guest-row-fields">' +
     '<div class="form-group"><label>Full Name</label>' +
     '<input type="text" class="guest-name-readonly" value="' + (guestName||"").replace(/"/g,"&quot;") + '" readonly /></div>' +
@@ -2054,42 +2048,52 @@ function buildGuestRowPrefilled(i, label, guestName){
     'I have an allergy or intolerance</label>' +
     '<div id="allergy-field-' + i + '" style="display:none;margin-top:0.5rem">' +
     '<input type="text" class="allergy-field-input" placeholder="Please describe your allergy…" /></div></div>' +
+    '</div>' +
     '</div>';
+}
+
+function toggleGuestAttending(radio, i){
+  var details = document.getElementById("guest-details-" + i);
+  if(details) details.style.display = radio.value === "yes" ? "block" : "none";
 }
 
 // ── Submit RSVP ──
 function submitRSVP(){
   var email = (document.getElementById("rsvp-email")||{}).value || "";
-  var attending = (document.querySelector('input[name="attending"]:checked')||{}).value || "yes";
   var message = (document.getElementById("rsvp-message")||{}).value || "";
+  var submittedAt = new Date().toISOString();
 
+  // Build per-guest data, reading each guest's own attending radio
   var guests = [];
-  if(attending === "yes"){
-    var rows = document.querySelectorAll(".guest-row");
-    rows.forEach(function(row, idx){
-      var nameInput = row.querySelector('.guest-name-readonly') || row.querySelector('input[type="text"]');
-      var selects = row.querySelectorAll("select");
-      var allergyInput = row.querySelector('.allergy-field-input');
-      guests.push({
-        name: nameInput ? nameInput.value : "",
-        dietary: selects[0] ? selects[0].value : "",
-        alcohol: selects[1] ? selects[1].value : "",
-        allergy: allergyInput ? allergyInput.value : ""
-      });
+  var rows = document.querySelectorAll(".guest-row");
+  rows.forEach(function(row){
+    var idx = row.getAttribute("data-guest-index");
+    var attendingRadio = row.querySelector('input[name="attending-' + idx + '"]:checked');
+    var guestAttending = attendingRadio ? attendingRadio.value : "yes";
+    var nameInput = row.querySelector('.guest-name-readonly') || row.querySelector('input[type="text"]');
+    var selects = row.querySelectorAll("select");
+    var allergyInput = row.querySelector('.allergy-field-input');
+    guests.push({
+      name: nameInput ? nameInput.value : "",
+      attending: guestAttending,
+      dietary: guestAttending === "yes" && selects[0] ? selects[0].value : "",
+      alcohol: guestAttending === "yes" && selects[1] ? selects[1].value : "",
+      allergy: guestAttending === "yes" && allergyInput ? allergyInput.value : ""
     });
-  }
+  });
+
+  // Overall attending = yes if at least one guest is attending
+  var anyAttending = guests.some(function(g){ return g.attending === "yes"; });
 
   var payload = {
-    action: "submit",
     inviteId: _rsvpGuestData ? _rsvpGuestData.inviteId : "",
     phone: (document.getElementById("rsvp-phone")||{}).value || "",
     partyName: _rsvpGuestData ? _rsvpGuestData.partyName : "",
     email: email,
-    attending: attending,
-    guestCount: attending === "yes" ? guests.length : 0,
+    attending: anyAttending ? "yes" : "no",
     guests: guests,
     message: message,
-    submittedAt: new Date().toISOString()
+    submittedAt: submittedAt
   };
 
   if(!RSVP_ENDPOINT || RSVP_ENDPOINT === "YOUR_APPS_SCRIPT_URL_HERE"){
@@ -2098,20 +2102,20 @@ function submitRSVP(){
     return;
   }
 
-  var btn = document.querySelector('#rsvpForm .btn-gold');
+  var btn = document.querySelector('#rsvpStep2 .btn-gold');
   if(btn){ btn.disabled = true; btn.textContent = "Sending…"; }
 
+  // POST as plain text with JSON body — no-cors requires no custom headers
   fetch(RSVP_ENDPOINT, {
     method: "POST",
     mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   })
   .then(function(){
     document.getElementById("rsvpForm").style.display="none";
     document.getElementById("rsvpSuccess").classList.add("show");
   })
-  .catch(function(err){
+  .catch(function(){
     if(btn){ btn.disabled = false; btn.textContent = "Send Reply"; }
     alert("Something went wrong. Please email us directly at nikhyta.desaipatel@gmail.com");
   });
