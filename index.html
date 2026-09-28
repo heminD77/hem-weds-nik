@@ -1965,7 +1965,7 @@ function toggleFAQ(el){
 
 // ── RSVP ──
 // GOOGLE APPS SCRIPT ENDPOINT — replace with your deployed Web App URL
-var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbxyz8g-SZA8qA6tBWkHF_p1D1giROOHezAOA4WV_Q_pOwzg0LEJ5jDxv6_iNzhQbVr28w/exec";
+var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbzOEbQ0iVoF_u2un9J4jwxZvmgzKind3Wgl9TQdJ3H5c_nBn-Vw_iicIAYCK-kh0558MQ/exec";
 
 // Stores guest data returned from lookup
 var _rsvpGuestData = null;
@@ -2023,11 +2023,14 @@ function _showRSVPStep2(data){
     "Invitation found — welcome, " + (data.partyName || "valued guest") + "!";
 
   // Build guest rows from prefilled names (read-only)
-  var guests = data.guests || [];
-  var guestCount = guests.length || 1;
+  // Filter to max 6 guests and exclude anything that looks like a timestamp
+  var guests = (data.guests || []).filter(function(g){
+    return g && g.name && !/^\d{4}-\d{2}-\d{2}T/.test(g.name);
+  }).slice(0, 6);
+  if(guests.length === 0) guests = [{ name: data.partyName || "" }];
   var container = document.getElementById("guestRows");
   container.innerHTML = "";
-  for(var i = 0; i < guestCount; i++){
+  for(var i = 0; i < guests.length; i++){
     var gName = guests[i] ? guests[i].name : "";
     var label = i === 0 ? "You" : "Guest " + (i + 1);
     container.innerHTML += buildGuestRowPrefilled(i + 1, label, gName);
@@ -2035,7 +2038,9 @@ function _showRSVPStep2(data){
 }
 
 function buildGuestRowPrefilled(i, label, guestName){
-  return '<div class="guest-row"><div class="guest-row-header"><span class="guest-row-num">' + label + '</span></div>' +
+  var numBadge = '<span class="guest-row-num">' + i + '</span>';
+  var labelText = '<span>' + label + '</span>';
+  return '<div class="guest-row"><div class="guest-row-header">' + numBadge + labelText + '</div>' +
     '<div class="guest-row-fields">' +
     '<div class="form-group"><label>Full Name</label>' +
     '<input type="text" class="guest-name-readonly" value="' + (guestName||"").replace(/"/g,"&quot;") + '" readonly /></div>' +
