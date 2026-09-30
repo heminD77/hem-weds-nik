@@ -1595,7 +1595,7 @@ footer::before{
 
       <!-- STEP 1: Phone lookup -->
       <div id="rsvpStep1" class="rsvp-phone-step">
-        <p class="rsvp-phone-intro">Enter the mobile number we have on file for you and we'll find your invitation.</p>
+        <p class="rsvp-phone-intro">Enter the mobile number we have on file for you and we'll find your invitation. Please use international format — e.g. <strong>+44 7700 000000</strong> for UK numbers.</p>
         <div class="rsvp-phone-input-row">
           <input id="rsvp-phone" type="tel" placeholder="+44 7700 000000" autocomplete="tel" />
           <button class="btn-lookup" id="lookupBtn" onclick="lookupPhone()">Find Invite</button>
@@ -1614,6 +1614,13 @@ footer::before{
           <label>Email Address</label>
           <input id="rsvp-email" type="email" placeholder="your@email.com" />
         </div>
+        <div class="form-group">
+          <label>Which side of the family are you invited from?</label>
+          <div class="radio-group" style="flex-direction:row;gap:1.5rem;margin-top:0.5rem;">
+            <label class="radio-option"><input type="radio" name="rsvp-side" value="bride" checked /> Bride's side</label>
+            <label class="radio-option"><input type="radio" name="rsvp-side" value="groom" /> Groom's side</label>
+          </div>
+        </div>
         <div id="guestRows"></div>
         <div class="form-group" style="margin-top:0.5rem">
           <label>Message to the Couple (optional)</label>
@@ -1631,7 +1638,7 @@ footer::before{
     <div class="rsvp-success" id="rsvpSuccess">
       <div class="rsvp-success-icon">✦</div>
       <h3>Thank You!</h3>
-      <p>Your RSVP has been received. We cannot wait to celebrate with you.</p>
+      <p>Thank you! Your RSVP has been received and your response has been noted. We're so grateful you've taken the time to respond and appreciate you being part of this special chapter in our lives. With love, Hemin &amp; Nikhyta 🤍</p>
     </div>
   </div>
 </section>
@@ -1952,7 +1959,7 @@ function toggleFAQ(el){
 
 // ── RSVP ──
 // GOOGLE APPS SCRIPT ENDPOINT — replace with your deployed Web App URL
-var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbyV2HNe8Wj2znn7ePlX5alp9j5uTFBe7MPOf7brRcqZmvDjzjAn0nzfZhBYzIZdV8B0Yg/exec";
+var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbzNrKEiVlDhcGPKksxH2Gf35Oi2gRIifLdiDNHg_EWhlk6AftwFH7rRK-Oo2ylGQzyDsQ/exec";
 
 // Stores guest data returned from lookup
 var _rsvpGuestData = null;
@@ -2061,6 +2068,8 @@ function toggleGuestAttending(radio, i){
 function submitRSVP(){
   var email = (document.getElementById("rsvp-email")||{}).value || "";
   var message = (document.getElementById("rsvp-message")||{}).value || "";
+  var sideRadio = document.querySelector('input[name="rsvp-side"]:checked');
+  var side = sideRadio ? sideRadio.value : "";
   var submittedAt = new Date().toISOString();
 
   // Build per-guest data, reading each guest's own attending radio
@@ -2093,6 +2102,7 @@ function submitRSVP(){
     attending: anyAttending ? "yes" : "no",
     guests: guests,
     message: message,
+    side: side,
     submittedAt: submittedAt
   };
 
@@ -2113,6 +2123,7 @@ function submitRSVP(){
   qs += "&email="       + encodeURIComponent(payload.email);
   qs += "&attending="   + encodeURIComponent(payload.attending);
   qs += "&message="     + encodeURIComponent(payload.message);
+  qs += "&side="        + encodeURIComponent(payload.side);
   qs += "&submittedAt=" + encodeURIComponent(payload.submittedAt);
   for(var gi = 0; gi < payload.guests.length; gi++){
     var g = payload.guests[gi];
