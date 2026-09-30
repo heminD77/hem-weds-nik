@@ -1959,7 +1959,7 @@ function toggleFAQ(el){
 
 // ── RSVP ──
 // GOOGLE APPS SCRIPT ENDPOINT — replace with your deployed Web App URL
-var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbzNrKEiVlDhcGPKksxH2Gf35Oi2gRIifLdiDNHg_EWhlk6AftwFH7rRK-Oo2ylGQzyDsQ/exec";
+var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbzB_wFcn3Fx_vGdResWOxEqtNBXcPvmIoCEKDou47Cs1E_jvvSVjV3rkkBOXyBx-bfAVw/exec";
 
 // Stores guest data returned from lookup
 var _rsvpGuestData = null;
@@ -2055,6 +2055,9 @@ function buildGuestRowPrefilled(i, label, guestName){
     'I have an allergy or intolerance</label>' +
     '<div id="allergy-field-' + i + '" style="display:none;margin-top:0.5rem">' +
     '<input type="text" class="allergy-field-input" placeholder="Please describe your allergy…" /></div></div>' +
+    '<div class="form-group" style="margin-top:0.5rem"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">' +
+    '<input type="checkbox" class="child-age-checkbox" onchange="toggleChildMode(this,' + i + ')" style="width:auto;accent-color:var(--gold)" /> ' +
+    'This guest is aged 11 or under</label></div>' +
     '</div>' +
     '</div>';
 }
@@ -2082,12 +2085,14 @@ function submitRSVP(){
     var nameInput = row.querySelector('.guest-name-readonly') || row.querySelector('input[type="text"]');
     var selects = row.querySelectorAll("select");
     var allergyInput = row.querySelector('.allergy-field-input');
+    var childCheckbox = row.querySelector('.child-age-checkbox');
     guests.push({
       name: nameInput ? nameInput.value : "",
       attending: guestAttending,
       dietary: guestAttending === "yes" && selects[0] ? selects[0].value : "",
       alcohol: guestAttending === "yes" && selects[1] ? selects[1].value : "",
-      allergy: guestAttending === "yes" && allergyInput ? allergyInput.value : ""
+      allergy: guestAttending === "yes" && allergyInput ? allergyInput.value : "",
+      child: childCheckbox && childCheckbox.checked ? "yes" : "no"
     });
   });
 
@@ -2132,6 +2137,7 @@ function submitRSVP(){
     qs += "&guests_" + gi + "_dietary="   + encodeURIComponent(g.dietary   || "");
     qs += "&guests_" + gi + "_alcohol="   + encodeURIComponent(g.alcohol   || "");
     qs += "&guests_" + gi + "_allergy="   + encodeURIComponent(g.allergy   || "");
+    qs += "&guests_" + gi + "_child="    + encodeURIComponent(g.child     || "no");
   }
 
   // Use JSONP so response can be read across origins
