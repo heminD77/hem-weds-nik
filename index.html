@@ -1270,25 +1270,50 @@ footer::before{
 .ram-notice a { color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }
 .ram-guest-list { display: flex; flex-direction: column; gap: 0.75rem; }
 .ram-guest-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.7rem 0.9rem;
+  padding: 0.75rem 0.9rem;
   border: 0.5px solid var(--border);
   border-radius: 3px;
   font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ram-guest-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .ram-guest-name { color: var(--ivory); }
 .ram-guest-status {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-family: 'Cinzel', serif;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 0.2rem 0.6rem;
   border-radius: 2px;
+  white-space: nowrap;
 }
 .ram-guest-status.yes { color: #7fc47f; border: 0.5px solid rgba(127,196,127,0.3); background: rgba(127,196,127,0.07); }
 .ram-guest-status.no  { color: var(--muted); border: 0.5px solid rgba(122,138,168,0.3); background: rgba(122,138,168,0.07); }
+.ram-guest-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.ram-detail-item {
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: rgba(201,169,110,0.05);
+  border: 0.5px solid rgba(201,169,110,0.15);
+  border-radius: 2px;
+  padding: 0.15rem 0.5rem;
+  line-height: 1.5;
+}
+.ram-child-tag {
+  color: var(--gold-light);
+  border-color: rgba(201,169,110,0.3);
+  background: rgba(201,169,110,0.08);
+}
 .ceremony-modal-eyebrow {
   font-family: 'Cinzel', serif;
   font-size: 0.58rem;
@@ -2051,7 +2076,7 @@ function toggleFAQ(el){
 
 // ── RSVP ──
 // GOOGLE APPS SCRIPT ENDPOINT — replace with your deployed Web App URL
-var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbwmQ20fKGk2-UCwiw46S9UVvqcVNTDdIi1MI2htJBw19Hcs8-mYaW9szb7CoXxURUtB7g/exec";
+var RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbxM_n5V3AUvPfp12ZE4x6U1VG5OcbwfPAF_8z-8XdZE2VXUc04PAlOGzDRpKkOLXPvIhQ/exec";
 
 // Stores guest data returned from lookup
 var _rsvpGuestData = null;
@@ -2339,25 +2364,47 @@ updateGuestRows(1);
 
 // ── CEREMONY MODAL ──
 function _showRsvpAlreadyModal(data) {
-  var guests = (data.guests || []).filter(function(g){
-    return g && g.name && !/^\d{4}-\d{2}-\d{2}T/.test(g.name);
-  }).slice(0, 6);
-  var statuses = data.guestStatuses || [];
+  var guests = data.submittedGuests && data.submittedGuests.length
+    ? data.submittedGuests
+    : (data.guests || []).filter(function(g){
+        return g && g.name && !/^\d{4}-\d{2}-\d{2}T/.test(g.name);
+      }).slice(0, 6);
+
   var list = document.getElementById("ramGuestList");
   list.innerHTML = "";
+
   for (var i = 0; i < guests.length; i++) {
-    var status = (statuses[i] || "").toLowerCase();
-    var statusLabel = status === "no" ? "Declined" : "Attending";
-    var statusClass = status === "no" ? "no" : "yes";
+    var g = guests[i];
+    var attending = String(g.attending || "Yes").toLowerCase();
+    var isYes = attending !== "no";
+    var statusLabel = isYes ? "Attending" : "Declined";
+    var statusClass = isYes ? "yes" : "no";
+
+    var details = "";
+    if (isYes) {
+      var parts = [];
+      if (g.dietary)  parts.push('<span class="ram-detail-item">🍽 ' + g.dietary + '</span>');
+      if (g.alcohol)  {
+        var alcLabel = g.alcohol === "yes" ? "Drinking" : g.alcohol === "some" ? "Just a glass or two" : "Not drinking";
+        parts.push('<span class="ram-detail-item">🥂 ' + alcLabel + '</span>');
+      }
+      if (g.allergy)  parts.push('<span class="ram-detail-item">⚠️ ' + g.allergy + '</span>');
+      if (String(g.child).toLowerCase() === "yes") parts.push('<span class="ram-detail-item ram-child-tag">Aged 11 or under</span>');
+      if (parts.length) details = '<div class="ram-guest-details">' + parts.join("") + '</div>';
+    }
+
     list.innerHTML +=
       '<div class="ram-guest-row">' +
-        '<span class="ram-guest-name">' + (guests[i].name || "") + '</span>' +
-        '<span class="ram-guest-status ' + statusClass + '">' + statusLabel + '</span>' +
+        '<div class="ram-guest-row-top">' +
+          '<span class="ram-guest-name">' + (g.name || "") + '</span>' +
+          '<span class="ram-guest-status ' + statusClass + '">' + statusLabel + '</span>' +
+        '</div>' +
+        details +
       '</div>';
   }
+
   document.getElementById("rsvpAlreadyModal").classList.add("open");
   document.body.style.overflow = "hidden";
-  // Reset phone step so it's clean if they close and retry
   var btn = document.getElementById("lookupBtn");
   if (btn) { btn.disabled = false; btn.textContent = "Find Invite"; }
 }
