@@ -232,17 +232,40 @@ h1.hero-names em { font-style:italic; color:var(--gold-light); }
   opacity: 0;
   animation: heroFadeUp 1s ease 1.4s forwards;
 }
+.hero-date-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(0.75rem, 2.5vw, 1.5rem);
+  width: clamp(320px, 70vw, 720px);
+  margin: 0 auto 0.6rem;
+}
+.hero-date-rule::before,
+.hero-date-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  min-width: 40px;
+}
+.hero-date-rule::before {
+  background: linear-gradient(to right, transparent, rgba(201,169,110,0.7));
+}
+.hero-date-rule::after {
+  background: linear-gradient(to left, transparent, rgba(201,169,110,0.7));
+}
 .hero-date {
   font-family: 'Cinzel', serif;
-  font-size: 0.78rem;
-  letter-spacing: 0.35em;
-  color: var(--muted);
+  font-size: clamp(1rem, 2.4vw, 1.4rem);
+  letter-spacing: clamp(0.18em, 0.4vw, 0.32em);
+  color: var(--gold);
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .hero-venue {
   font-size: 0.88rem;
   font-weight: 300;
   color: var(--muted);
-  margin-top: 0.4rem;
+  margin-top: 0.3rem;
   letter-spacing: 0.06em;
 }
 .hero-hashtag {
@@ -943,7 +966,8 @@ footer::before{
   #hero { padding: 1.25rem; }
   .hero-eyebrow { font-size: 0.48rem; letter-spacing: 0.25em; gap: 0.8rem; }
   .hero-eyebrow::before, .hero-eyebrow::after { width: 28px; }
-  .hero-date { font-size: 0.62rem; letter-spacing: 0.15em; }
+  .hero-date { font-size: clamp(0.88rem, 4vw, 1.1rem); letter-spacing: 0.15em; }
+  .hero-date-rule { width: min(90vw, 340px); gap: 0.5rem; }
   .hero-venue { font-size: 0.78rem; }
   .hero-hashtag { font-size: 0.78rem; letter-spacing: 0.16em; margin-top: 0.9rem; }
 
@@ -1536,7 +1560,9 @@ footer::before{
     </h1>
     <div class="hero-divider"></div>
     <div class="hero-meta">
-      <div class="hero-date">27th May 2027</div>
+      <div class="hero-date-rule">
+        <div class="hero-date">27th May 2027</div>
+      </div>
       <div class="hero-venue">Meridian Grand &middot; London, England</div>
       <div class="hero-hashtag">#TheDesaiPatelStory</div>
     </div>
@@ -1713,7 +1739,7 @@ footer::before{
       <div class="schedule-event">
         <div class="schedule-tag">Arrival</div>
         <h3>Guest Arrival</h3>
-        <p>Guests are warmly welcomed from 2:15 PM. Refreshments will be available on arrival as you take your seats ahead of the celebrations.</p>
+        <p>Guests are warmly welcomed from 2:15 PM. Bride's side to be seated inside. Groom's side to await commencement of Baraat outside.</p>
       </div>
     </div>
     <div class="schedule-item reveal reveal-delay-2">
@@ -1762,7 +1788,7 @@ footer::before{
       <div class="schedule-event">
         <div class="schedule-tag">Celebration</div>
         <h3>First Dance &amp; Celebrations</h3>
-        <p>The dance floor opens with the couple's first dance, followed by a full evening of music and celebration. Toasts, speeches, and heartfelt moments will be woven throughout the evening.</p>
+        <p>The dance floor opens with the couple's first dance, followed by a full evening of music and celebration. Dinner will be served during the evening. Toasts, speeches, and heartfelt moments will be woven throughout the evening.</p>
       </div>
     </div>
     <div class="schedule-item reveal reveal-delay-7">
